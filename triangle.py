@@ -126,7 +126,7 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
     for i, x in enumerate(xs):
         ax = axes[i, i]
         # Plot the histograms.
-        color = hist_kwargs.pop("color", plot_kwargs.pop("color", "k"))
+        color = hist_kwargs.get("color", plot_kwargs.get("color", "k"))
         n, b, p = ax.hist(x, range=extents[i], histtype="step", color=color,
                           **hist_kwargs)
         if truths is not None:
@@ -241,7 +241,7 @@ def hist2d(x, y, plot_kwargs=dict(), hist_kwargs=dict(), **kwargs):
 
     extent = kwargs.pop("extent", [[x.min(), x.max()], [y.min(), y.max()]])
     bins = hist_kwargs.pop("bins", 50)
-    color = hist_kwargs.pop("color", plot_kwargs.pop("color", "k"))
+    color = hist_kwargs.pop("color", plot_kwargs.get("color", "k"))
     linewidths = hist_kwargs.pop("linewidths", None)
     plot_datapoints = kwargs.get("plot_datapoints", True)
     plot_contours = kwargs.get("plot_contours", True)
