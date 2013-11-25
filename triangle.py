@@ -235,7 +235,7 @@ def hist2d(x, y, plot_kwargs=dict(), hist_kwargs=dict(), **kwargs):
     """
     ax = kwargs.pop("ax", pl.gca())
 
-    plot_kwargs["ms"] = plot_kwargs.get("ms", 1.5)
+    plot_kwargs["ms"] =plot_kwargs.get("ms",plot_kwargs.pop("markersize",1.5))
     plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.15)
 
     extent = kwargs.pop("extent", [[x.min(), x.max()], [y.min(), y.max()]])
