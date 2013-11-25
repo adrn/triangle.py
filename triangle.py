@@ -137,8 +137,7 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
             xsorted = sorted(x)
             qvalues = [xsorted[int(q * len(xsorted))] for q in quantiles]
             for q in qvalues:
-                ax.axvline(q, ls="dashed",
-                           color=hist_kwargs.get("color", "k"))
+                ax.axvline(q, ls="dashed", color=color)
 
             if verbose:
                 print("Quantiles:")
