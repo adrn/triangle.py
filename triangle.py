@@ -28,7 +28,8 @@ import matplotlib.cm as cm
 
 def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
            scale_hist=False, quantiles=[], verbose=True, plot_contours=True,
-           plot_datapoints=True, fig=None, **kwargs):
+           plot_datapoints=True, fig=None,
+           hist_kwargs=dict(), plot_kwargs=dict()):
     """
     Make a *sick* corner plot showing the projections of a data set in a
     multi-dimensional space. kwargs are passed to hist2d() or used for
@@ -77,6 +78,8 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
 
     """
 
+    hist_kwargs["bins"] = hist_kwargs.get("bins", 50)
+
     # Deal with 1D sample lists.
     xs = np.atleast_1d(xs)
     if len(xs.shape) == 1:
@@ -86,9 +89,6 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
         xs = xs.T
     assert xs.shape[0] <= xs.shape[1], "I don't believe that you want more " \
                                        "dimensions than samples!"
-
-    # backwards-compatibility
-    plot_contours = kwargs.get("smooth", plot_contours)
 
     K = len(xs)
     factor = 2.0           # size of one side of one panel
@@ -126,8 +126,8 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
     for i, x in enumerate(xs):
         ax = axes[i, i]
         # Plot the histograms.
-        n, b, p = ax.hist(x, bins=kwargs.get("bins", 50), range=extents[i],
-                          histtype="step", color=kwargs.get("color", "k"))
+        n, b, p = ax.hist(x, range=extents[i], histtype="step",
+                          **hist_kwargs)
         if truths is not None:
             ax.axvline(truths[i], color=truth_color)
 
@@ -136,7 +136,8 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
             xsorted = sorted(x)
             qvalues = [xsorted[int(q * len(xsorted))] for q in quantiles]
             for q in qvalues:
-                ax.axvline(q, ls="dashed", color=kwargs.get("color", "k"))
+                ax.axvline(q, ls="dashed",
+                           color=hist_kwargs.get("color", "k"))
 
             if verbose:
                 print("Quantiles:")
@@ -171,9 +172,9 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
                 continue
 
             hist2d(y, x, ax=ax, extent=[extents[j], extents[i]],
+                   hist_kwargs=hist_kwargs, plot_kwargs=plot_kwargs,
                    plot_contours=plot_contours,
-                   plot_datapoints=plot_datapoints,
-                   **kwargs)
+                   plot_datapoints=plot_datapoints)
 
             if truths is not None:
                 ax.plot(truths[j], truths[i], "s", color=truth_color)
@@ -227,17 +228,20 @@ def error_ellipse(mu, cov, ax=None, factor=1.0, **kwargs):
     return ellipsePlot
 
 
-def hist2d(x, y, *args, **kwargs):
+def hist2d(x, y, plot_kwargs=dict(), hist_kwargs=dict(), **kwargs):
     """
     Plot a 2-D histogram of samples.
 
     """
     ax = kwargs.pop("ax", pl.gca())
 
+    plot_kwargs["ms"] = plot_kwargs.get("ms", 1.5)
+    plot_kwargs["alpha"] = plot_kwargs.get("alpha", 0.15)
+
     extent = kwargs.pop("extent", [[x.min(), x.max()], [y.min(), y.max()]])
-    bins = kwargs.pop("bins", 50)
-    color = kwargs.pop("color", "k")
-    linewidths = kwargs.pop("linewidths", None)
+    bins = hist_kwargs.pop("bins", 50)
+    color = hist_kwargs.pop("color", "k")
+    linewidths = hist_kwargs.pop("linewidths", None)
     plot_datapoints = kwargs.get("plot_datapoints", True)
     plot_contours = kwargs.get("plot_contours", True)
 
@@ -272,8 +276,8 @@ def hist2d(x, y, *args, **kwargs):
     X, Y = X[:-1], Y[:-1]
 
     if plot_datapoints:
-        ax.plot(x, y, "o", color=color, ms=1.5, zorder=-1, alpha=0.1,
-                rasterized=True)
+        ax.plot(x, y, "o", rasterized=True, zorder=-1, **plot_kwargs)
+
         if plot_contours:
             ax.contourf(X1, Y1, H.T, [V[-1], H.max()],
                         cmap=LinearSegmentedColormap.from_list("cmap",
