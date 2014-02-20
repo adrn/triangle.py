@@ -4,7 +4,7 @@
 from __future__ import print_function, absolute_import, unicode_literals
 
 __all__ = ["corner", "hist2d", "error_ellipse"]
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 __author__ = "Dan Foreman-Mackey (danfm@nyu.edu)"
 __copyright__ = "Copyright 2013 Daniel Foreman-Mackey"
 __contributors__ = [
@@ -14,6 +14,7 @@ __contributors__ = [
     "Ekta Patel @ekta1224",
     "Emily Rice @emilurice",
     "Geoff Ryan @geoffryan",
+    "Kyle Barbary @kbarbary",
     "Phil Marshall @drphilmarshall",
     "Pierre Gratier @pirg",
 ]
@@ -26,10 +27,17 @@ from matplotlib.patches import Ellipse
 import matplotlib.cm as cm
 
 
+<<<<<<< HEAD
 def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
            scale_hist=False, quantiles=[], verbose=True, plot_contours=True,
            plot_datapoints=True, fig=None,
            hist_kwargs=dict(), plot_kwargs=dict()):
+=======
+def corner(xs, weights=None, labels=None, show_titles=False, title_fmt=".2f",
+           title_args={}, extents=None, truths=None, truth_color="#4682b4",
+           scale_hist=False, quantiles=[], verbose=True,
+           plot_contours=True, plot_datapoints=True, fig=None, **kwargs):
+>>>>>>> 321d72766c01e0c2292179b68b85c23130cec63b
     """
     Make a *sick* corner plot showing the projections of a data set in a
     multi-dimensional space. kwargs are passed to hist2d() or used for
@@ -43,12 +51,30 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
         axis is the list of samples and the next axis are the dimensions of
         the space.
 
+    weights : array_like (nsamples,)
+        The weight of each sample. If `None` (default), samples are given
+        equal weight.
+
     labels : iterable (ndim,) (optional)
         A list of names for the dimensions.
 
+    show_titles : bool (optional)
+        Displays a title above each 1-D histogram showing the 0.5 quantile
+        with the upper and lower errors supplied by the quantiles argument.
+
+    title_fmt : string (optional)
+        The format string for the quantiles given in titles.
+        (default: `.2f`)
+
+    title_args : dict (optional)
+        Any extra keyword arguments to send to the `add_title` command.
+
     extents : iterable (ndim,) (optional)
-        A list of length 2 tuples containing lower and upper bounds (extents)
-        for each dimension, e.g., [(0.,10.), (1.,5), etc.]
+        A list where each element is either a length 2 tuple containing
+        lower and upper bounds (extents) or a float in range (0., 1.)
+        giving the fraction of samples to include in bounds, e.g.,
+        [(0.,10.), (1.,5), 0.999, etc.].
+        If a fraction, the bounds are chosen to be equal-tailed.
 
     truths : iterable (ndim,) (optional)
         A list of reference values to indicate on the plots.
@@ -90,10 +116,23 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
     assert xs.shape[0] <= xs.shape[1], "I don't believe that you want more " \
                                        "dimensions than samples!"
 
+<<<<<<< HEAD
+=======
+    if weights is not None:
+        weights = np.asarray(weights)
+        if weights.ndim != 1:
+            raise ValueError('weights must be 1-D')
+        if xs.shape[1] != weights.shape[0]:
+            raise ValueError('lengths of weights must match number of samples')
+
+    # backwards-compatibility
+    plot_contours = kwargs.get("smooth", plot_contours)
+
+>>>>>>> 321d72766c01e0c2292179b68b85c23130cec63b
     K = len(xs)
     factor = 2.0           # size of one side of one panel
     lbdim = 0.5 * factor   # size of left/bottom margin
-    trdim = 0.05 * factor  # size of top/right margin
+    trdim = 0.2 * factor   # size of top/right margin
     whspace = 0.05         # w/hspace size
     plotdim = factor * K + factor * (K - 1.) * whspace
     dim = lbdim + plotdim + trdim
@@ -122,26 +161,61 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
                               "`extent` argument.")
                              .format(", ".join(map("{0}".format,
                                                    np.arange(len(m))[m]))))
+    else:
+        # If any of the extents are percentiles, convert them to ranges.
+        for i in range(len(extents)):
+            try:
+                emin, emax = extents[i]
+            except TypeError:
+                q = [0.5 - 0.5*extents[i], 0.5 + 0.5*extents[i]]
+                extents[i] = quantile(xs[i], q, weights=weights)
 
     for i, x in enumerate(xs):
-        ax = axes[i, i]
+        if np.shape(xs)[0] == 1:
+            ax = axes
+        else:
+            ax = axes[i, i]
         # Plot the histograms.
+<<<<<<< HEAD
         color = hist_kwargs.get("color", plot_kwargs.get("color", "k"))
         n, b, p = ax.hist(x, range=extents[i], histtype="step",
                           **hist_kwargs)
+=======
+        n, b, p = ax.hist(x, weights=weights, bins=kwargs.get("bins", 50),
+                          range=extents[i], histtype="step",
+                          color=kwargs.get("color", "k"))
+>>>>>>> 321d72766c01e0c2292179b68b85c23130cec63b
         if truths is not None:
             ax.axvline(truths[i], color=truth_color)
 
         # Plot quantiles if wanted.
         if len(quantiles) > 0:
-            xsorted = sorted(x)
-            qvalues = [xsorted[int(q * len(xsorted))] for q in quantiles]
+            qvalues = quantile(x, quantiles, weights=weights)
             for q in qvalues:
                 ax.axvline(q, ls="dashed", color=color)
 
             if verbose:
                 print("Quantiles:")
                 print(zip(quantiles, qvalues))
+
+            if show_titles:
+                # Compute the quantiles for the title. This might redo
+                # unneeded computation but who cares.
+                q_16, q_50, q_84 = quantile(x, [0.16, 0.5, 0.84],
+                                            weights=weights)
+                q_m, q_p = q_50-q_16, q_84-q_50
+
+                # Format the quantile display.
+                fmt = "{{0:{0}}}".format(title_fmt).format
+                title = r"${{{0}}}_{{-{1}}}^{{+{2}}}$"
+                title = title.format(fmt(q_50), fmt(q_m), fmt(q_p))
+
+                # Add in the column name if it's given.
+                if labels is not None:
+                    title = "{0} = {1}".format(labels[i], title)
+
+                # Add the title to the axis.
+                ax.set_title(title, **title_args)
 
         # Set up the axes.
         ax.set_xlim(extents[i])
@@ -163,7 +237,10 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
                 ax.xaxis.set_label_coords(0.5, -0.3)
 
         for j, y in enumerate(xs):
-            ax = axes[i, j]
+            if np.shape(xs)[0] == 1:
+                ax = axes
+            else:
+                ax = axes[i, j]
             if j > i:
                 ax.set_visible(False)
                 ax.set_frame_on(False)
@@ -174,7 +251,12 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
             hist2d(y, x, ax=ax, extent=[extents[j], extents[i]],
                    hist_kwargs=hist_kwargs, plot_kwargs=plot_kwargs,
                    plot_contours=plot_contours,
+<<<<<<< HEAD
                    plot_datapoints=plot_datapoints)
+=======
+                   plot_datapoints=plot_datapoints,
+                   weights=weights, **kwargs)
+>>>>>>> 321d72766c01e0c2292179b68b85c23130cec63b
 
             if truths is not None:
                 ax.plot(truths[j], truths[i], "s", color=truth_color)
@@ -201,6 +283,25 @@ def corner(xs, labels=None, extents=None, truths=None, truth_color="#4682b4",
                     ax.yaxis.set_label_coords(-0.3, 0.5)
 
     return fig
+
+
+def quantile(x, q, weights=None):
+    """
+    Like numpy.percentile, but:
+
+    * Values of q are quantiles [0., 1.] rather than percentiles [0., 100.]
+    * scalar q not supported (q must be iterable)
+    * optional weights on x
+
+    """
+    if weights is None:
+        return np.percentile(x, [100. * qi for qi in q])
+    else:
+        idx = np.argsort(x)
+        xsorted = x[idx]
+        cdf = np.add.accumulate(weights[idx])
+        cdf /= cdf[-1]
+        return np.interp(q, cdf, xsorted).tolist()
 
 
 def error_ellipse(mu, cov, ax=None, factor=1.0, **kwargs):
@@ -253,7 +354,8 @@ def hist2d(x, y, plot_kwargs=dict(), hist_kwargs=dict(), **kwargs):
     X = np.linspace(extent[0][0], extent[0][1], bins + 1)
     Y = np.linspace(extent[1][0], extent[1][1], bins + 1)
     try:
-        H, X, Y = np.histogram2d(x.flatten(), y.flatten(), bins=(X, Y))
+        H, X, Y = np.histogram2d(x.flatten(), y.flatten(), bins=(X, Y),
+                                 weights=kwargs.get('weights', None))
     except ValueError:
         raise ValueError("It looks like at least one of your sample columns "
                          "have no dynamic range. You could try using the "
