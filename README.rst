@@ -45,3 +45,24 @@ With some other tweaks (see `demo.py
 something that looks awesome like:
 
 .. image:: https://raw.github.com/dfm/triangle.py/master/triangle.png
+
+By default, data points are shown as grayscale points with contours.
+Contours are shown at 0.5, 1, 1.5, and 2 sigma.
+
+Attribution
+-----------
+
+.. image:: https://zenodo.org/badge/doi/10.5281/zenodo.11020.png
+   :target: http://dx.doi.org/10.5281/zenodo.11020
+
+If you make use of this code, please `cite it
+<http://dx.doi.org/10.5281/zenodo.11020>`_.
+
+
+License
+-------
+
+Copyright 2013, 2014 Dan Foreman-Mackey
+
+triangle.py is free software made available under the BSD License.
+For details see the LICENSE file.
